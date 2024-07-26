@@ -2,6 +2,12 @@
 #include <SoftwareSerial.h>
 #include <DFRobotDFPlayerMini.h>
 
+// ESP IO26 -> DFPLAYER TX
+// ESP IO27 -> DFPLAYER RX (brez uporov oboje)
+
+//če ne prime/ga ne zazna, odklopi IO26 in priklopi nazaj
+
+
 // Use pins 2 and 3 to communicate with DFPlayer Mini
 static const uint8_t PIN_MP3_TX = 26; // Connects to module's RX 
 static const uint8_t PIN_MP3_RX = 27; // Connects to module's TX 
