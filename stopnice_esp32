@@ -2,6 +2,8 @@
 #include <SoftwareSerial.h>
 #include <DFRobotDFPlayerMini.h>
 
+// MODUL: MP3 TF 16P
+
 // ESP IO26 -> DFPLAYER TX
 // ESP IO27 -> DFPLAYER RX (brez uporov oboje)
 
