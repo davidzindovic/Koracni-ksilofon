@@ -1,48 +1,117 @@
-
-// MODUL: MP3 TF 16P
-
-// ESP IO26 -> DFPLAYER TX
-// ESP IO27 -> DFPLAYER RX (brez uporov oboje)
-
-//če ne prime/ga ne zazna, odklopi IO26 in priklopi nazaj
-
 #include <Arduino.h>
 #include "DFRobotDFPlayerMini.h"
+#include "CD74HC4051E_lib.h"
 
-#define RXD2 26
-#define TXD2 27
-//HardwareSerial mySoftwareSerial(1);
+#define READ_PIN 39
+#define NUM_INPUTS 16
+#define NUM_CHIPS 2
+
+#define DEBUG_MAIN 0
+
+//Ob vklopu naprave je potrebno IO36 oz MP3 TX disconnectat in nazaj priklopiti dokaj hitro
+// !!!! še bolje, disconnectanega poveži in nato priklopi
+
+//ESP RXD2 (IO36) -> MP3 TF 16P TX
+//ESP TXD2 (IO15) -> MP3 TF 16P RX
+
+#define RXD2 36
+#define TXD2 15
 DFRobotDFPlayerMini myDFPlayer;
+
+uint8_t master_mux_array[]={9,10,13,5};
+uint8_t input_mux_array[]={25,26,27,3,0,18};
 
 void setup()
 {
   Serial2.begin(9600, SERIAL_8N1, RXD2, TXD2);
+
+  #if DEBUG_MAIN
   Serial.begin(115200);
+  #endif
   
   myDFPlayer.begin(Serial2);
+
+    if(mux_checkup(NUM_INPUTS,NUM_CHIPS,input_mux_array,master_mux_array))
+  {
+    while(1){}
+  }
+  
+  pinMode(READ_PIN,INPUT);
+  
+  for(int master=0;master<sizeof(master_mux_array);master++)
+  {
+    pinMode(master_mux_array[master],OUTPUT);
+  }
+  
+  for(int input=0;input<sizeof(input_mux_array);input++)
+  {
+    pinMode(input_mux_array[input],OUTPUT);
+  }
+
 bool cakam=1;
 while(cakam)
 {
   if(Serial2.available() >0) {
-      Serial.println("Serial is available."); 
+     #if DEBUG_MAIN
+     Serial.println("Serial is available."); 
      Serial.println("début");
+     #endif
+     delay(200);
      myDFPlayer.play(1);
+     digitalWrite(LED_BUILTIN,1);
      delay(500);
      cakam=0;
-  } else {
-        Serial.println("Serial is not available.");
-}      
+  } 
+  else {
+    #if DEBUG_MAIN
+     Serial.println("Serial is not available.");
+     digitalWrite(LED_BUILTIN,0);
+    #endif
+        }
 }
+
+
 delay(500);
 
 }
 
 void loop()
 {
-static uint8_t muzka=1;
-for(int i=0;i<6;i++)
-{
-  myDFPlayer.play(muzka+i);
-  delay(2000);
-}
+static bool first=1;
+static bool tog=0;
+  static uint64_t pins_copy=0;
+  static uint64_t pins=0;
+  
+  pins=pin_check(NUM_INPUTS, NUM_CHIPS,input_mux_array,master_mux_array,READ_PIN);
+  if(first)
+  {first=0;}
+  else
+  {
+  if(pins!=pins_copy)
+  {
+    uint64_t change=pins^pins_copy;
+
+    for(int q=0;q<NUM_INPUTS;q++)
+    {
+      if((change&(1<<q))>0 && !(pins_copy&(1<<q))) 
+      {
+        myDFPlayer.play(q);
+
+        #if DEBUG_MAIN
+        Serial.println(q);
+        #endif
+      }
+    }
+    #if DEBUG_MAIN
+    Serial.print(uint16_t(pins),BIN);
+    Serial.print("  ");
+    Serial.print(uint16_t(pins_copy),BIN);
+    Serial.print("  ");
+    Serial.println(uint16_t(change),BIN);
+    #endif
+  }
+  } 
+
+
+  pins_copy=pins;
 }
