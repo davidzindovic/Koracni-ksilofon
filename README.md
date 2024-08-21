@@ -1,4 +1,6 @@
-Dodaj da se s tipko regulira glasnost (+,-). Na voljo sta 2 inputa.
+//Dodaj da se s tipko regulira glasnost (+,-). Na voljo sta 2 inputa.
+
+glej nov .cpp. Urihti knjiznico, sprobi pin checke
 
 https://www.dfrobot.com/product-1590.html
 
