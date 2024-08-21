@@ -3,7 +3,7 @@
 #include "CD74HC4051E_lib.h"
 
 #define READ_PIN 39
-#define NUM_INPUTS 16
+#define NUM_INPUTS 24
 #define NUM_CHIPS 2
 
 #define DEBUG_MAIN 1
@@ -15,11 +15,12 @@
 //ESP TXD2 (IO15) -> MP3 TF 16P RX
 
 #define RXD2 36
-#define TXD2 15
+#define TXD2 3
 DFRobotDFPlayerMini myDFPlayer;
 
-uint8_t master_mux_array[]={9,10,13,5};
-uint8_t input_mux_array[]={25,26,27,3,0,18};
+uint8_t master_mux_array[]={17,16,4};
+uint8_t input_mux_array[]={12,14,22,21,19,23};
+//trenutno bodo za testing pini kontra (mux6->mux1), ker je en pin tudi TX za serial
 
 void setup()
 {
@@ -97,13 +98,14 @@ static bool tog=0;
     {
       if((change&(1<<q))>0 && !(pins_copy&(1<<q))) 
       {
-        myDFPlayer.play(q);
+        //myDFPlayer.play(q);
 
         #if DEBUG_MAIN
         Serial.println(q);
         #endif
       }
     }
+    /*
     #if DEBUG_MAIN
     Serial.print(uint16_t(pins),BIN);
     Serial.print("  ");
@@ -111,6 +113,7 @@ static bool tog=0;
     Serial.print("  ");
     Serial.println(uint16_t(change),BIN);
     #endif
+    */
   }
   } 
 
