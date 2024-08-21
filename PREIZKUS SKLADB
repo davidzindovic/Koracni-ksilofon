@@ -1,0 +1,90 @@
+#include <Arduino.h>
+#include "DFRobotDFPlayerMini.h"
+#include "CD74HC4051E_lib.h"
+
+#define READ_PIN 39
+#define NUM_INPUTS 16
+#define NUM_CHIPS 2
+#define NUM_STAIRS 24
+
+#define DEBUG_MAIN 1
+
+//ESP RXD2 (IO36) -> MP3 TF 16P TX
+//ESP TXD2 (IO3) -> MP3 TF 16P RX
+
+#define RXD2 36
+#define TXD2 3
+DFRobotDFPlayerMini myDFPlayer;
+
+uint8_t master_mux_array[]={9,10,13,5};
+uint8_t input_mux_array[]={25,26,27,3,0,18};
+
+void setup()
+{
+  Serial2.begin(9600, SERIAL_8N1, RXD2, TXD2);
+
+  #if DEBUG_MAIN
+  Serial.begin(115200);
+  #endif
+  
+  myDFPlayer.begin(Serial2);
+
+    if(mux_checkup(NUM_INPUTS,NUM_CHIPS,input_mux_array,master_mux_array))
+  {
+    while(1){}
+  }
+  
+  pinMode(READ_PIN,INPUT);
+  
+  for(int master=0;master<sizeof(master_mux_array);master++)
+  {
+    pinMode(master_mux_array[master],OUTPUT);
+  }
+  
+  for(int input=0;input<sizeof(input_mux_array);input++)
+  {
+    pinMode(input_mux_array[input],OUTPUT);
+  }
+
+bool cakam=1;
+myDFPlayer.start();
+//myDFPlayer.play(1);
+//delay(2000);
+while(cakam)
+{
+  if(Serial2.available() >0) {
+     #if DEBUG_MAIN
+     Serial.println("Serial is available."); 
+     Serial.println("début");
+     #endif
+     
+     delay(200);
+     myDFPlayer.volume(20);
+
+     cakam=0;
+  } 
+  else {
+    #if DEBUG_MAIN
+     Serial.println("Serial is not available.");
+     digitalWrite(LED_BUILTIN,1);
+    #endif
+        }
+}
+
+#if DEBUG_MAIN
+Serial.println(myDFPlayer.available());
+#endif
+
+}
+
+void loop()
+{
+// blizu 30 rata precej glasno
+static int cnt=1;
+
+myDFPlayer.play(cnt);
+if(cnt==NUM_STAIRS)cnt=1;
+else cnt++;
+delay(500);
+
+}
