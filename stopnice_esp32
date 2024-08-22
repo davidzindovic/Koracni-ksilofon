@@ -3,34 +3,35 @@
 #include "CD74HC4051E_lib.h"
 
 #define READ_PIN 39
-#define NUM_INPUTS 24
-#define NUM_CHIPS 2
+#define NUM_INPUTS 25
+#define NUM_CHIPS 5
 
-#define DEBUG_MAIN 1
+#define DEBUG_MAIN 0
 
 //Ob vklopu naprave je potrebno IO36 oz MP3 TX disconnectat in nazaj priklopiti dokaj hitro
 // !!!! še bolje, disconnectanega poveži in nato priklopi
 
 //ESP RXD2 (IO36) -> MP3 TF 16P TX
-//ESP TXD2 (IO15) -> MP3 TF 16P RX
+//ESP TXD2 (IO3) -> MP3 TF 16P RX
 
 #define RXD2 36
 #define TXD2 3
 DFRobotDFPlayerMini myDFPlayer;
 
+// S2, S1, S0
 uint8_t master_mux_array[]={17,16,4};
-uint8_t input_mux_array[]={12,14,22,21,19,23};
-//trenutno bodo za testing pini kontra (mux6->mux1), ker je en pin tudi TX za serial
+uint8_t input_mux_array[]={/*26,25,1,*/10,9,27,2,5,13,18,0,15,21,19,23,12,14,22};
+//pini od mux1 zakomentirani za serial izpis
 
 void setup()
 {
   Serial2.begin(9600, SERIAL_8N1, RXD2, TXD2);
 
-  #if DEBUG_MAIN
+  //#if DEBUG_MAIN
   Serial.begin(115200);
-  #endif
+  //#endif
   
-  myDFPlayer.begin(Serial2);
+  myDFPlayer.begin(Serial2, /*isACK = */true, /*doReset = */true);
 
     if(mux_checkup(NUM_INPUTS,NUM_CHIPS,input_mux_array,master_mux_array))
   {
@@ -50,7 +51,8 @@ void setup()
   }
 
 bool cakam=1;
-myDFPlayer.start();
+//myDFPlayer.start();
+/*
 while(cakam)
 {
   if(Serial2.available() >0) {
@@ -59,22 +61,25 @@ while(cakam)
      Serial.println("début");
      #endif
      delay(200);
-     myDFPlayer.volume(15);
-     myDFPlayer.play(1);
+     //myDFPlayer.volume(15);
+     //myDFPlayer.play(1);
      digitalWrite(LED_BUILTIN,1);
-     delay(500);
+     //delay(500);
      cakam=0;    
   } 
   else {
     #if DEBUG_MAIN
      Serial.println("Serial is not available.");
      digitalWrite(LED_BUILTIN,0);
+    // myDFPlayer.reset();
     #endif
         }
 }
 #if DEBUG_MAIN
 Serial.println(myDFPlayer.available());
 #endif
+*/
+
 }
 
 void loop()
@@ -91,7 +96,7 @@ static bool tog=0;
   else
   {
   if(pins!=pins_copy)
-  {
+  { Serial.println("NOVO");
     uint64_t change=pins^pins_copy;
 
     for(int q=0;q<NUM_INPUTS;q++)
@@ -117,7 +122,7 @@ static bool tog=0;
   }
   } 
 
-
+  //Serial.println(uint16_t(pins),BIN);
   pins_copy=pins;
 
 /*
