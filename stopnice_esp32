@@ -1,22 +1,19 @@
 #include <Arduino.h>
-#include "DFRobotDFPlayerMini.h"
+#include <DFPlayerMini_Fast.h>
 #include "CD74HC4051E_lib.h"
+
+//druga knjiznica za mp3 player
+//potrebno installat firetimer.h
 
 #define READ_PIN 39
 #define NUM_INPUTS 25
 #define NUM_CHIPS 5
 
-#define DEBUG_MAIN 0
-
-//Ob vklopu naprave je potrebno IO36 oz MP3 TX disconnectat in nazaj priklopiti dokaj hitro
-// !!!! še bolje, disconnectanega poveži in nato priklopi
-
-//ESP RXD2 (IO36) -> MP3 TF 16P TX
-//ESP TXD2 (IO3) -> MP3 TF 16P RX
+#define DEBUG_MAIN 1
 
 #define RXD2 36
 #define TXD2 3
-DFRobotDFPlayerMini myDFPlayer;
+DFPlayerMini_Fast myMP3;
 
 // S2, S1, S0
 uint8_t master_mux_array[]={17,16,4};
@@ -25,13 +22,12 @@ uint8_t input_mux_array[]={/*26,25,1,*/10,9,27,2,5,13,18,0,15,21,19,23,12,14,22}
 
 void setup()
 {
-  Serial2.begin(9600, SERIAL_8N1, RXD2, TXD2);
-
-  //#if DEBUG_MAIN
+  #if DEBUG_MAIN
   Serial.begin(115200);
-  //#endif
-  
-  myDFPlayer.begin(Serial2, /*isACK = */true, /*doReset = */true);
+  #endif
+
+  Serial2.begin(9600, SERIAL_8N1, RXD2, TXD2);
+  myMP3.begin(Serial2, true);  
 
     if(mux_checkup(NUM_INPUTS,NUM_CHIPS,input_mux_array,master_mux_array))
   {
@@ -50,35 +46,6 @@ void setup()
     pinMode(input_mux_array[input],OUTPUT);
   }
 
-bool cakam=1;
-//myDFPlayer.start();
-/*
-while(cakam)
-{
-  if(Serial2.available() >0) {
-     #if DEBUG_MAIN
-     Serial.println("Serial is available."); 
-     Serial.println("début");
-     #endif
-     delay(200);
-     //myDFPlayer.volume(15);
-     //myDFPlayer.play(1);
-     digitalWrite(LED_BUILTIN,1);
-     //delay(500);
-     cakam=0;    
-  } 
-  else {
-    #if DEBUG_MAIN
-     Serial.println("Serial is not available.");
-     digitalWrite(LED_BUILTIN,0);
-    // myDFPlayer.reset();
-    #endif
-        }
-}
-#if DEBUG_MAIN
-Serial.println(myDFPlayer.available());
-#endif
-*/
 
 }
 
@@ -103,7 +70,7 @@ static bool tog=0;
     {
       if((change&(1<<q))>0 && !(pins_copy&(1<<q))) 
       {
-        //myDFPlayer.play(q);
+        myMP3.play(q);
 
         #if DEBUG_MAIN
         Serial.println(q);
@@ -128,7 +95,7 @@ static bool tog=0;
 /*
 static int cnt=0;
 static bool smer=0;
-myDFPlayer.play(1);
+myMP3.play(1);
 delay(100);
 if(cnt<14 && !smer){myDFPlayer.volumeUp();cnt++;}
 else if(cnt==14 && !smer) smer=1;
