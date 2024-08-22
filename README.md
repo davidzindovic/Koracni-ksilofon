@@ -1,6 +1,7 @@
 //Dodaj da se s tipko regulira glasnost (+,-). Na voljo sta 2 inputa.
 
-glej nov .cpp. Urihti knjiznico, sprobi pin checke
+Knjiznica urihtana, num inputs ze zrihtan pa pini za muxe
+Za zrihtat je mp3 player
 
 https://www.dfrobot.com/product-1590.html
 
