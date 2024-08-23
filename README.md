@@ -1,8 +1,10 @@
 //Dodaj da se s tipko regulira glasnost (+,-). Na voljo sta 2 inputa.
+Zadeva dela, lah se poigra se mal z indeksi v knjiznici
 
-Knjiznica urihtana, num inputs ze zrihtan pa pini za muxe
-
-Za zrihtat je mp3 player
+future to do:
+- vec muzke na sd -> vsak dan zamenja izbranih 25 skladb
+- wifi povezljivost na PEF
+- analiza ljudi na stopnicah  (wifi neki)
 
 https://www.dfrobot.com/product-1590.html
 
