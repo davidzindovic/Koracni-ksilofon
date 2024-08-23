@@ -27,7 +27,7 @@ void setup()
   #endif
 
   Serial2.begin(9600, SERIAL_8N1, RXD2, TXD2);
-  myMP3.begin(Serial2, true);  
+  myMP3.begin(Serial2, false);  
 
     if(mux_checkup(NUM_INPUTS,NUM_CHIPS,input_mux_array,master_mux_array))
   {
@@ -63,22 +63,28 @@ static bool tog=0;
   else
   {
   if(pins!=pins_copy)
-  { Serial.println("NOVO");
+  {
     uint64_t change=pins^pins_copy;
 
-    for(int q=0;q<NUM_INPUTS;q++)
+    for(int q=0;q<  (NUM_INPUTS+1);q++)
     {
       if((change&(1<<q))>0 && !(pins_copy&(1<<q))) 
       {
         myMP3.play(q);
 
         #if DEBUG_MAIN
+        Serial.print("Skladba: ");
         Serial.println(q);
         #endif
       }
     }
     /*
     #if DEBUG_MAIN
+    
+    for(int debug=0;debug<NUM_INPUTS;debug++)
+    {
+      Serial.print(pins&(1<<debug));
+    }
     Serial.print(uint16_t(pins),BIN);
     Serial.print("  ");
     Serial.print(uint16_t(pins_copy),BIN);
