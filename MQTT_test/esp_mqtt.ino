@@ -8,14 +8,16 @@
 #include <PubSubClient.h>
 
 // Replace the SSID/Password details as per your wifi router
-const char* ssid = "yourSSID";
-const char* password = "yourPassword";
+const char* AP_ssid = "RPI";
+const char* AP_password = "stopnice";
 
 // Replace your MQTT Broker IP address here:
 const char* mqtt_server = "192.168.1.45";
 
 WiFiClient espClient;
 PubSubClient client(espClient);
+
+const char* publisher_name="esp32";
 
 long lastMsg = 0;
 
@@ -30,32 +32,7 @@ void blink_led(unsigned int times, unsigned int duration){
   }
 }
 
-void setup_wifi() {
-  delay(50);
-  Serial.println();
-  Serial.print("Connecting to ");
-  Serial.println(ssid);
-
-  WiFi.begin(ssid, password);
-
-  int c=0;
-  while (WiFi.status() != WL_CONNECTED) {
-    blink_led(2,200); //blink LED twice (for 200ms ON time) to indicate that wifi not connected
-    delay(1000); //
-    Serial.print(".");
-    c=c+1;
-    if(c>10){
-        ESP.restart(); //restart ESP after 10 seconds
-    }
-  }
-
-  Serial.println("");
-  Serial.println("WiFi connected");
-  Serial.println("IP address: ");
-  Serial.println(WiFi.localIP());
-  
-}
-
+/*
 void connect_mqttServer() {
   // Loop until we're reconnected
   while (!client.connected()) {
@@ -86,46 +63,40 @@ void connect_mqttServer() {
         }
   }
   
-}
+}*/
 
-//this function will be executed whenever there is data available on subscribed topics
-void callback(char* topic, byte* message, unsigned int length) {
-  Serial.print("Message arrived on topic: ");
+void callback(char* topic, byte* payload, unsigned int length) {
+  Serial.print("Message arrived [");
   Serial.print(topic);
-  Serial.print(". Message: ");
-  String messageTemp;
-  
-  for (int i = 0; i < length; i++) {
-    Serial.print((char)message[i]);
-    messageTemp += (char)message[i];
+  Serial.print("] ");
+  for (int i=0;i<length;i++) {
+    Serial.print((char)payload[i]);
   }
   Serial.println();
-
-  // Check if a message is received on the topic "rpi/broadcast"
-  if (String(topic) == "rpi/broadcast") {
-      if(messageTemp == "10"){
-        Serial.println("Action: blink LED");
-        blink_led(1,1250); //blink LED once (for 1250ms ON time)
-      }
-  }
-
-  //Similarly add more if statements to check for other subscribed topics 
 }
 
 void setup() {
   pinMode(ledPin, OUTPUT);
   Serial.begin(115200);
 
-  setup_wifi();
+    // Connect to Wi-Fi network with SSID and password
+  Serial.print("Setting AP (Access Point)…");
+  // Remove the password parameter, if you want the AP (Access Point) to be open
+  WiFi.softAP(AP_ssid, AP_password);
+
+  IPAddress IP = WiFi.softAPIP();
+  Serial.print("AP IP address: ");
+  Serial.println(IP);
+
   client.setServer(mqtt_server,1883);//1883 is the default port for MQTT server
   client.setCallback(callback);
 }
 
 void loop() {
   
-  if (!client.connected()) {
-    connect_mqttServer();
-  }
+  //if (!client.connected()) {
+  //  connect_mqttServer();
+  //}
 
   client.loop();
   
@@ -133,7 +104,7 @@ void loop() {
   if (now - lastMsg > 4000) {
     lastMsg = now;
 
-    client.publish("esp32/sensor1", String(millis())); //topic name (to which this ESP32 publishes its data). 88 is the dummy value.
+    client.publish("esp32", "bruh"); //topic name (to which this ESP32 publishes its data). 88 is the dummy value.
     
   }
   
