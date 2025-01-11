@@ -1,3 +1,4 @@
+#https://www.engineersgarage.com/raspberry-pi-esp32-esp8266-mqtt-iot/
 import paho.mqtt.client as mqtt
 
 MQTT_ADDRESS = ‘192.168.*.*’
