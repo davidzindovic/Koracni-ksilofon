@@ -17,7 +17,7 @@ def rx_and_echo():
             sock.send(data)
             
 #MAC address of ESP32
-addr = "24:0A:C4:E8:0F:9A"
+addr = "C8:F0:9E:E1:50:F2"
 #uuid = "94f39d29-7d6d-437d-973b-fba39e49d4ee"
 #service_matches = find_service( uuid = uuid, address = addr )
 service_matches = find_service( address = addr )
