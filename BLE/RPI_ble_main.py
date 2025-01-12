@@ -1,3 +1,8 @@
+#sudo apt install bluetooth bluez blueman
+#sudo systemctl enable bluetooth 
+#sudo systemctl start bluetooth 
+#sudo apt install python3-bluez
+
 from bluetooth import *
 
 def input_and_send():
