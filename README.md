@@ -1,3 +1,7 @@
+- Dodaj RPI layoute za slike
+- Preizkusi response time če si že v Loopu za canvas
+- Ugotovi kako se skripta autostarta ob bootu
+
 //Dodaj da se s tipko regulira glasnost (+,-). Na voljo sta 2 inputa.
 Zadeva dela, lah se poigra se mal z indeksi v knjiznici
 
