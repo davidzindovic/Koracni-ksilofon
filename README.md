@@ -1,4 +1,9 @@
-- Dodaj RPI layoute za slike
+To do:
+- medtem ko prikazuje sliko je zmožen prejeti vnos
+- možnost izbire da se vprašanje ponavlja dokler odgovor ni pravilen
+- preizkus vnosa preko BT
+
+
 - Preizkusi response time če si že v Loopu za canvas
 - Ugotovi kako se skripta autostarta ob bootu
 
