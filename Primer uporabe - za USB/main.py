@@ -6,6 +6,14 @@ import matplotlib.pyplot as plt
 import cv2
 import numpy as np
 import time
+import threading
+
+img=None
+root=None
+
+#cakanje podaj v sekundah:
+cakanje_med_nalogami=3
+cakanje_pri_prikazu_pravilnega_rezultata=2
 
 #---------------USB----------------------------
 def find_usb_drive():
@@ -60,6 +68,7 @@ def load_number_from_file(file_path):
         return None
 
 def create_image_grid(folder_path,naloga, user_input, file_number, gap=10, scale_factor=0.7, stevilka_scale=0.5):
+    #potencialni dodatni parametri: stevilo_stolpcev,stevilo_vrstic,stevilo_slik,
     image_names = [naloga+".jpg"] + [f"stevilka{i}.jpg" for i in range(1, 9)] + [f"{i}.jpg" for i in range(1, 9)]
     image_paths = [os.path.join(folder_path, name) for name in image_names]
     
@@ -98,23 +107,50 @@ def create_image_grid(folder_path,naloga, user_input, file_number, gap=10, scale
     
     # Place the rest of the images
     for i in range(8):
-        num_x_offset = (i % grid_width) * (stevilka_width + uniform_width + gap)
-        num_y_offset = images[0].height + (i // grid_width) * uniform_height
-        final_image.paste(resized_images[i], (num_x_offset, num_y_offset))
-        
-        img_x_offset = num_x_offset + stevilka_width
-        final_image.paste(resized_images[i + 8], (img_x_offset, num_y_offset))
+        if i<len(resized_images):
+            num_x_offset = (i % grid_width) * (stevilka_width + uniform_width + gap)
+            num_y_offset = images[0].height + (i // grid_width) * uniform_height
+            final_image.paste(resized_images[i], (num_x_offset, num_y_offset))
+            
+            img_x_offset = num_x_offset + stevilka_width
+            final_image.paste(resized_images[i + 8], (img_x_offset, num_y_offset))
     
     return final_image
 
-def display_fullscreen_image(image):
+def display_fullscreen_image(image, input=2):
+    global root, img
+    
+    # If the root window already exists and is open, destroy it before creating a new one
+    try:
+        root.destroy()
+    except:
+        pass  # If root doesn't exist yet, ignore the exception
+    
     root = tk.Tk()
     root.attributes('-fullscreen', True)
     img = ImageTk.PhotoImage(image)
     label = tk.Label(root, image=img)
     label.pack()
-    root.bind("<Escape>", lambda e: root.destroy())
-    root.mainloop()
+    
+    #root.img=img
+    print("INPUT: ",input)
+    #root.bind("<Escape>", lambda e: root.destroy())
+    if input==1:
+        input_thread = threading.Thread(target=close_img)
+        input_thread.daemon = True  # This allows the thread to exit when the main program exits
+        input_thread.start()
+        root.mainloop()
+    elif input==0:
+        root.after(cakanje_pri_prikazu_pravilnega_rezultata*1000, root.destroy)
+        root.mainloop()
+
+    #root.mainloop()
+
+def close_img():
+    global user_input,root
+    user_input = int(input("Enter a number: "))
+    root.after(0, root.destroy)
+
 #--------------BESEDILNA KONC-------------------------------------
 
 #------------------ENAČBE----------------------
@@ -217,7 +253,7 @@ def mask_numbers_before_underscore(equation_text):
 #-----------------------POVZETE FUNKCIJE----------------------
 def besedilna_main(path_za_slike,naloga,resitev):
     folder_path = r"D:\besedilna_slike"+"\\"+path_za_slike
-    
+    global user_input
     if not os.path.isdir(folder_path):
         print("Invalid folder path, please try again.")
         exit()
@@ -231,16 +267,16 @@ def besedilna_main(path_za_slike,naloga,resitev):
     file_number=resitev
     
     combined_image = create_image_grid(folder_path,naloga, "q", file_number)
-    display_fullscreen_image(combined_image)
+    display_fullscreen_image(combined_image,1)
     
-    user_input = int(input("Enter a number: "))
+    #user_input = int(input("Enter a number: "))
     
     if file_number is None:
         print("Error: Could not load the number from the file.")
         exit()
     
     combined_image = create_image_grid(folder_path,naloga, user_input, file_number)
-    display_fullscreen_image(combined_image)
+    display_fullscreen_image(combined_image,0)
     
 def enacba_main(path_za_slike,naloga,resitev):
     image_folder = r"D:\enacba_slike\\"+path_za_slike
@@ -256,10 +292,10 @@ def enacba_main(path_za_slike,naloga,resitev):
     equation_parts = list(masked_text)
     underscore_index = masked_text.index("_")
     
-    print(correct_answer)
-    print(masked_text)
-    print(equation_parts)
-    print(underscore_index)
+    #print(correct_answer)
+    #print(masked_text)
+    #print(equation_parts)
+    #print(underscore_index)
     
     # Initial display with "_" placeholder
     image_paths = [os.path.join(image_folder, name + ".jpg") for name in equation_parts]
@@ -275,7 +311,7 @@ def enacba_main(path_za_slike,naloga,resitev):
         image_paths[underscore_index + index_update] = os.path.join(image_folder, user_input + ".jpg")
         index_update += 1
         display_images(image_paths)
-    print(str(type(user_answer)) + " " + str(type(correct_answer)))
+    #print(str(type(user_answer)) + " " + str(type(correct_answer)))
     if int(user_answer) == int(correct_answer):
         image_paths.append(os.path.join(image_folder, "check.jpg"))
     else:
@@ -283,8 +319,8 @@ def enacba_main(path_za_slike,naloga,resitev):
     
     display_images(image_paths, reserve_space=False)
     
-    print("Press any key to exit...")
-    cv2.waitKey(0)  # Wait for key press before closing
+    #print("Press any key to exit...")
+    cv2.waitKey(cakanje_pri_prikazu_pravilnega_rezultata*1000)  # Wait for key press before closing
     cv2.destroyAllWindows()
 #---------------------POVZETE FUNKCIJE KONC-------------------------------------
 
@@ -297,4 +333,4 @@ for i in range(len(naloga)):
         besedilna_main(naloga[i][1],naloga[i][2],naloga[i][3])
     elif naloga[i][0]=="enacba":
         enacba_main(naloga[i][1],naloga[i][2],naloga[i][3])
-    time.sleep(3)
+    time.sleep(cakanje_med_nalogami)
