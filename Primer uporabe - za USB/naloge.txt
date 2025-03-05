@@ -1,2 +1,3 @@
 besedilna:naloga1;papagaj#3
 enacba:naloga1;1+1_=2#1
+enacba:naloga1;1+49__=50#49
