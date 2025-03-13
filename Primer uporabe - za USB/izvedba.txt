@@ -1,0 +1,4 @@
+slideshow:ponedeljek;3#2
+stopmotion:prva_animacija;1
+barve:simple;3!#eb4034,#eb4034,#495446,#aba295,#8a6a91
+barve:complex;3!#eb4034,#eb4034,#495446,#aba295,#8a6a91
