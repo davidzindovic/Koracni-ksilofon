@@ -2,6 +2,15 @@
 #include <DFPlayerMini_Fast.h>
 #include "CD74HC4051E_lib.h"
 
+#include "BluetoothSerial.h"
+#include "esp_bt_device.h"
+
+#if !defined(CONFIG_BT_ENABLED) || !defined(CONFIG_BLUEDROID_ENABLED)
+#error Bluetooth is not enabled! Please run `make menuconfig` to and enable it
+#endif
+
+BluetoothSerial SerialBT;
+
 //druga knjiznica za mp3 player
 //potrebno installat firetimer.h
 
@@ -20,6 +29,26 @@ uint8_t master_mux_array[]={17,16,4};
 uint8_t input_mux_array[]={/*26,25,1,*/10,9,27,2,5,13,18,0,15,21,19,23,12,14,22};
 //pini od mux1 zakomentirani za serial izpis
 
+uint8_t input_remap[25]={9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,1,2,3,4,5,6,7,8};
+
+void printDeviceAddress() {
+ 
+  const uint8_t* point = esp_bt_dev_get_address();
+ 
+  for (int i = 0; i < 6; i++) {
+ 
+    char str[3];
+ 
+    sprintf(str, "%02X", (int)point[i]);
+    Serial.print(str);
+ 
+    if (i < 5){
+      Serial.print(":");
+    }
+ 
+  }
+}
+
 void setup()
 {
   #if DEBUG_MAIN
@@ -28,6 +57,7 @@ void setup()
 
   Serial2.begin(9600, SERIAL_8N1, RXD2, TXD2);
   myMP3.begin(Serial2, false);  
+  SerialBT.begin("ESP_stopnice"); //Bluetooth device name
 
     if(mux_checkup(NUM_INPUTS,NUM_CHIPS,input_mux_array,master_mux_array))
   {
@@ -57,14 +87,16 @@ static bool tog=0;
   static uint64_t pins_copy=0;
   static uint64_t pins=0;
   
-  pins=pin_check(NUM_INPUTS, NUM_CHIPS,input_mux_array,master_mux_array,READ_PIN);
+  pins=digital_pin_check(NUM_INPUTS, NUM_CHIPS,input_mux_array,master_mux_array,READ_PIN);
   if(first)
   {first=0;}
   else
   {
   if(pins!=pins_copy)
   {
-    uint64_t change=pins^pins_copy;
+    uint64_t change=pins^pins_copy; // XOR checks change of state
+
+    //SerialBT.write(pins);
 
     for(int q=0;q<  (NUM_INPUTS+1);q++)
     {
@@ -72,10 +104,20 @@ static bool tog=0;
       {
         myMP3.play(q);
 
+        if(SerialBT.available())
+        {
+          //q-1 zaradi začetnega indeksa 0
+          SerialBT.write(input_remap[q-1]);
+          SerialBT.flush();
+        }
+        else delay(20);
+
         #if DEBUG_MAIN
         Serial.print("Skladba: ");
-        Serial.println(q);
+        Serial.println(input_remap[q-1]);
+       // Serial.println(change);
         #endif
+        
       }
     }
     /*
