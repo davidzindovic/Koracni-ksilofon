@@ -14,12 +14,22 @@ def input_and_send():
         sock.send("\n")
         
 def rx_and_echo():
-    sock.send("\nsend anything\n")
+    #sock.send("\nsend anything\n")
     while True:
         data = sock.recv(buf_size)
         if data:
-            print(data)
-            sock.send(data)
+            neki=str(data)
+            if(neki[3]=='r'):
+                cifra=9
+            elif(neki[3]=='t'):
+                cifra=10
+            elif(neki[3]=='n'):
+                cifra=13
+            else
+                cifra=int(neki[4])*16+int(neki[5])
+                
+            print(cifra)
+           # sock.send(data)
             
 #MAC address of ESP32
 addr = "C8:F0:9E:E1:50:F2"
