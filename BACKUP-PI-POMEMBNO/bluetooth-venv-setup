@@ -1,0 +1,23 @@
+#fix "import bluetooth" for virtual environment on raspberry pi:
+
+# 0. get into virtual environment:
+python3 -m venv ime
+source ime/bin/activate
+
+#1. rebuild pybluez:
+git clone https://github.com/pybluez/pybluez.git
+cd pybluez
+python setup.py build
+python setup.py install
+# you can check modules with "pip list"
+
+#2. if running 64-bit OS force 32-bit (worked for me):
+sudo dpkg --add-architecture armhf
+sudo apt-get update
+sudo apt-get install libbluetooth-dev:armhf
+
+#3. try importing bluetooth by typing "python" and in console "import bluetooth"
+
+#4. debug:
+#if you get error "can't import bluetooth._bluetooth"
+#  -> pybluez wasn't installed correctly
