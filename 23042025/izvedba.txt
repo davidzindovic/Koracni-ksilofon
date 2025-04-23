@@ -1,0 +1,7 @@
+slideshow:ponedeljek;3#2
+stopmotion:prva_animacija;1
+barve:simple;3!#eb4034,#eb4034,#495446,#aba295,#8a6a91
+barve:complex;3!#eb4034,#eb4034,#495446,#aba295,#8a6a91
+besedilna:naloga1;papagaj#3
+enacba:naloga1;1+1_=2#1
+enacba:naloga1;1+49__=50#49
