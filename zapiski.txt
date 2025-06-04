@@ -1,0 +1,26 @@
+18.04.2025:
+delujejo: Bluetooth,slideshow,stopmotion,barve_complex(3),barve_simple(2) (loceno)
+TO-DO: povezi bluetooth in obstoječe naloge (spravi bluetooth v venv), 
+	naredi simulacijsko okolje za PC za uporabnika
+	lutka
+
+
+22.04.2025:
+main.py -> besedilna+enačba
+koncna.py -> bluetooth+(besedilna+enacba) = DELA
+
+23.04.2025:
+koncna.py -> barve simple,stopmotion, slideshow = DELA; barve complex = NE DELA (prikaz)
+!! preveri data types slik
+
+TO-DO:	naredi simulacijsko okolje za PC za uporabnika
+	lutka
+
+04.06.2025:
+koncna.py -> barve complex delajo (in vse ostalo, edino lutka ne dela)
+
+To-DO: navodila za uporabo dev vs user
+	boot launch
+	screensaver
+	fullscreen
+	sim env za PC za user
