@@ -24,3 +24,13 @@ To-DO: navodila za uporabo dev vs user
 	screensaver
 	fullscreen
 	sim env za PC za user
+
+05.06.2025 -> full screen stopmotion dela, dodani threadi za gledanje prisotnosti usbja
+		sam ne delajo še dobro
+
+to-do: navodila za uporabo dev vs user
+	boot launch
+	screensaver (do konca)
+	sim env za PC za user
+	kere barve so na voljo (cifra+slika barve)
+	vmes med transitioni naj bo neka slika al neki
