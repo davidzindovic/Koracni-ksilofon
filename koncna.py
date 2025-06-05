@@ -13,9 +13,10 @@ import time
 import threading
 import matplotlib.patches as patches
 import vlc
-
+import glob
 import ctypes
-
+import queue
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from bluetooth import *
 buf_size = 1024;
 
@@ -366,7 +367,7 @@ def blend_colors(color1, color2):
 def plot_colors(hex_colors, indices):
     # Create a figure and axis
 	fig, ax = plt.subplots(figsize=(6, 4))
-    
+	fig=fullscreen_matplotlib()#POPRAVI/TESTIRAJ
     # Define the spacing for the squares
 	spacing = 0.2
 	square_size = 0.1
@@ -405,6 +406,8 @@ def complex_barvanje(hex_colors):
     
     # Create the plot
 	fig, ax = plt.subplots(figsize=(6, 6))
+	
+	fig=fullscreen_matplotlib()#POPRAVI/TESTIRAJ
     
     # Make the figure full-screen
 	mngr = plt.get_current_fig_manager()
@@ -499,75 +502,91 @@ def barve_main(mode, attempts,colors_all):
 
 #------------------------STOPMOTION-------------------------------------
 def display_images(folder, mode):
-	"""Displays images based on user input in sequence, with fullscreen or centered mode."""
-	root = tk.Tk()
-	root.title("Stopmotion Viewer")
-	files=os.listdir(folder)
-	if mode == 1:
-		root.attributes("-fullscreen", True)
+    """Stopmotion viewer with proper thread-safe GUI updates"""
+    root = tk.Tk()
+    ensure_fullscreen(root)
     
-	label = tk.Label(root)
-	label.pack()
+    # Thread control
+    stop_flag = threading.Event()
+    update_queue = queue.Queue()
     
-	current_index = [1]  # Track the current displayed image index
-	
-	
-    
-	def update_image():
-		
-		image_path = os.path.join(folder, f"{current_index[0]}.jpg")
-		if os.path.exists(image_path):
-			img = Image.open(image_path)
-			if mode == 1:
-				screen_width = root.winfo_screenwidth()
-				screen_height = root.winfo_screenheight()
-				img = img.resize((screen_width, screen_height), Image.Resampling.LANCZOS)
-			else:
-				img = img.resize((500, 500), Image.Resampling.LANCZOS)
-			img_tk = ImageTk.PhotoImage(img)
-			label.config(image=img_tk)
-			label.image = img_tk
-			print(f"Correct input for next step: {current_index[0] + 1} or {current_index[0] - 1 if current_index[0] > 1 else '-'}")
-		else:
-			print(f"Image {current_index[0]}.jpg not found in {folder}")
-			return
-    
-	def input_listener():
-		running=True
-		reset_counter=0
-		while running:
-			try:
-                #user_input = int(input("Enter the next number in sequence: "))
-				user_input=rx_and_echo()
-				
-				if user_input==25:
-				    reset_counter+=1
-				    
-				if reset_counter==5:
-				    root.quit()
-				    running=False
+    label = tk.Label(root)
+    label.pack(fill=tk.BOTH, expand=True)
+    current_index = [1]  # Track current image (list for mutable reference)
 
-				
-				if (user_input == current_index[0] + 1) and (current_index[0]!=len(files)) and running:
-					current_index[0] += 1
-					reset_counter=0
-					update_image()
-				elif (user_input == current_index[0] - 1 and current_index[0] > 1) and running:
-					current_index[0] -= 1
-					reset_counter=0
-					update_image()
-				elif running:
-					print(f"Incorrect sequence. Try again. Correct input: {current_index[0] + 1} or {current_index[0] - 1 if current_index[0] > 1 else '-'}")
-			except ValueError:
-				print("Invalid input. Please enter a number.")
+    def update_image():
+        """Process pending image updates from the queue"""
+        while not update_queue.empty():
+            index = update_queue.get()
+            current_index[0] = index
+            image_path = os.path.join(folder, f"{index}.jpg")
+            if os.path.exists(image_path):
+                try:
+                    img = Image.open(image_path)
+                    img = img.resize((root.winfo_screenwidth(), 
+                                    root.winfo_screenheight()),
+                                   Image.Resampling.LANCZOS)
+                    img_tk = ImageTk.PhotoImage(img)
+                    label.config(image=img_tk)
+                    label.image = img_tk  # Keep reference
+                except Exception as e:
+                    print(f"Image load error: {e}")
+            else:
+                print(f"Image {image_path} not found")
+        root.after(100, update_image)  # Continue checking for updates
+
+    def input_listener():
+        """Background thread for handling user input"""
+        while not stop_flag.is_set():
+            try:
+                user_input = rx_and_echo()
+                
+                if user_input == 25:  # Exit condition
+                    update_queue.put(-1)  # Signal to exit
+                    root.destroy()
+                    break
+                
+                # Validate input and queue update
+                file_count = len([f for f in os.listdir(folder) if f.endswith('.jpg')])
+                new_index = current_index[0]
+                
+                if user_input == current_index[0] + 1 and current_index[0] < file_count:
+                    new_index = current_index[0] + 1
+                elif user_input == current_index[0] - 1 and current_index[0] > 1:
+                    new_index = current_index[0] - 1
+                
+                if new_index != current_index[0]:
+                    update_queue.put(new_index)
+                    
+            except Exception as e:
+                print(f"Input error: {e}")
+
+    # Initial display
+    update_queue.put(1)
     
-	update_image()
-	stopmotion_thread = threading.Thread(target=input_listener)
-	stopmotion_thread.daemon = True  # This allows the thread to exit when the main program exits
-	stopmotion_thread.start()
-	root.mainloop()
-	stopmotion_thread.join()
-	root.destroy()
+    # Start the periodic update checker
+    root.after(100, update_image)
+    
+    # Start input thread
+    stopmotion_thread = threading.Thread(target=input_listener)
+    stopmotion_thread.daemon = True
+    stopmotion_thread.start()
+    
+    # Proper shutdown handling
+    def on_closing():
+        stop_flag.set()
+        stopmotion_thread.join(timeout=1)
+        root.destroy()
+    
+    root.protocol("WM_DELETE_WINDOW", on_closing)
+    
+    # Main loop
+    try:
+        root.mainloop()
+    finally:
+        stop_flag.set()
+        if stopmotion_thread.is_alive():
+            stopmotion_thread.join(timeout=1)
     
 def stopmotion_main(folder, mode):
 	folder="/media/lmk/stopnice/stopmotion/"+folder
@@ -731,31 +750,192 @@ def bluetooth_setup():
 	#sock.close()
 #-----------------------BLUETOOTH FUNKCIJE KONC-----------------
 
-bluetooth_setup()
+#---------------------------FULLSCREEN--------------------------
+def ensure_fullscreen(root):
+    """Universal fullscreen configuration that definitely works"""
+    # First try standard fullscreen
+    try:
+        root.attributes('-fullscreen', True)
+    except:
+        pass
+    
+    # Fallback to maximized window
+    try:
+        root.state('zoomed')  # Works on Windows/Mac
+    except:
+        pass
+    
+    # Linux/RPi specific
+    if os.name == 'posix':
+        try:
+            root.overrideredirect(True)  # Truly borderless
+            root.geometry("{0}x{1}+0+0".format(
+                root.winfo_screenwidth(),
+                root.winfo_screenheight()))
+        except:
+            pass
+    
+    root.configure(bg='black')
+    root.focus_force()
 
-# Example usage
-file_name = "izvedba.txt"  # Change to your actual file name
-naloga=read_and_split_file(file_name)
-#print(naloga)
-for i in range(len(naloga)):
-	print(naloga[i][:])
-	task_flag=0
-	if naloga[i][0]=="besedilna":
-		besedilna_main(naloga[i][1],naloga[i][2],naloga[i][3])
-		task_flag=1
-	elif naloga[i][0]=="enacba":
-		enacba_main(naloga[i][1],naloga[i][2],naloga[i][3])
-		task_flag=1
-	elif naloga[i][0]=="barve":
-		barve_main(naloga[i][1],naloga[i][2],naloga[i][3])
-		task_flag=1
-	elif naloga[i][0]=="stopmotion":
-		stopmotion_main(naloga[i][1],naloga[i][2])
-		task_flag=1
-	elif naloga[i][0]=="slideshow":
-		slideshow_main(naloga[i][1],naloga[i][2],naloga[i][3])
-		task_flag=1
-	print("novo")
-	if task_flag==1:
-		time.sleep(cakanje_med_nalogami)
-		task_flag=0
+def display_fullscreen_image(image):
+    """Display PIL image in fullscreen"""
+    root = tk.Tk()
+    ensure_fullscreen(root)
+    
+    try:
+        photo = ImageTk.PhotoImage(image)
+        label = tk.Label(root, image=photo, bg='black')
+        label.image = photo
+        label.pack(fill=tk.BOTH, expand=True)
+        
+        root.bind('<Escape>', lambda e: root.destroy())
+        root.mainloop()
+    except Exception as e:
+        print(f"Image display error: {e}")
+        root.destroy()
+
+def fullscreen_matplotlib():
+    """Configure matplotlib for fullscreen display"""
+    plt.rcParams['figure.figsize'] = (19.2, 10.8)  # 1920x1080 in inches
+    plt.rcParams['figure.dpi'] = 100
+    fig = plt.figure()
+    mngr = plt.get_current_fig_manager()
+    if hasattr(mngr, 'window'):
+        mngr.window.showMaximized()
+    return fig
+#---------------------FULLSCREEN KONC---------------------------
+
+#---------------------ZA GLEDANJE PRISOTNOSTI USB-JA------------
+# Global flag to control the USB monitor thread
+#usb_monitor_active = True
+
+usb_state = {
+    "present": False,
+    "lock": threading.Lock(),
+    "image_shown": False,
+    "root": None,
+    "force_restart": False
+}
+
+def usb_media_monitor(usb_name="stopnice", image_path="~/Desktop/UL_PEF_logo.png", check_interval=1):
+    """Background thread monitoring USB presence"""
+    image_path = os.path.expanduser(image_path)
+    
+    def show_image():
+        """Display fullscreen warning image"""
+        with usb_state["lock"]:
+            if usb_state["image_shown"] or usb_state["root"] is not None:
+                return
+                
+            try:
+                usb_state["root"] = tk.Tk()
+                usb_state["root"].attributes('-fullscreen', True)
+                usb_state["root"].configure(bg='black')
+                
+                img = Image.open(image_path)
+                photo = ImageTk.PhotoImage(img)
+                
+                label = tk.Label(usb_state["root"], image=photo, bg='black')
+                label.image = photo  # Keep reference
+                label.pack(fill=tk.BOTH, expand=True)
+                
+                usb_state["root"].bind('<Escape>', lambda e: usb_state["root"].destroy())
+                usb_state["root"].mainloop()
+                
+            except Exception as e:
+                print(f"Image display error: {e}")
+                if usb_state["root"]:
+                    usb_state["root"].destroy()
+
+    def safe_check_usb():
+        """Thread-safe USB check"""
+        try:
+            mounts = glob.glob('/media/lmk/*')# + glob.glob('/mnt/*')
+            return any(usb_name.lower() in mount.lower() for mount in mounts)
+        except Exception as e:
+            print(f"USB check error: {e}")
+            return False
+
+    while True:
+        current_state = safe_check_usb()
+        
+        with usb_state["lock"]:
+            if current_state != usb_state["present"]:
+                usb_state["present"] = current_state
+                
+                if not current_state:  # USB removed
+                    usb_state["image_shown"] = True
+                    usb_state["force_restart"] = True
+                    threading.Thread(target=show_image, daemon=True).start()
+                else:  # USB reinserted
+                    usb_state["image_shown"] = False
+                    if usb_state["root"]:
+                        usb_state["root"].after(100, usb_state["root"].destroy)
+                        usb_state["root"] = None
+        
+        time.sleep(check_interval)
+	
+def acces_usb_content():
+    with usb_state["lock"]:
+        if not usb_state["present"]:
+            raise RuntimeError("USB not available")
+	    
+    print("Accesing USB content ...")
+    
+#----------------------------- USB KONC ------------------------
+
+def main():
+    
+    monitor_thread=threading.Thread(
+	target=usb_media_monitor,
+	daemon=True
+    )
+    monitor_thread.start()
+    
+    
+    # Wait for initial USB presence
+    while True:
+        with usb_state["lock"]:
+            if usb_state["present"]:
+                break
+        time.sleep(0.1)
+
+    # Main program loop with restart capability
+    #while True:
+    try:
+	# Your existing main logic
+        bluetooth_setup()
+        file_name = "izvedba.txt"
+        naloga = read_and_split_file(file_name)
+	
+        for i in range(len(naloga)):
+            # Check for USB removal
+            with usb_state["lock"]:
+                if usb_state["force_restart"]:
+                    usb_state["force_restart"] = False
+                    raise RuntimeError("USB was reinserted - restarting")
+	    
+	    # Process each task
+            if naloga[i][0] == "besedilna":
+                besedilna_main(naloga[i][1], naloga[i][2], naloga[i][3])
+            elif naloga[i][0] == "enacba":
+                enacba_main(naloga[i][1], naloga[i][2], naloga[i][3])
+            elif naloga[i][0] == "barve":
+                barve_main(naloga[i][1], naloga[i][2], naloga[i][3])
+            elif naloga[i][0] == "stopmotion":
+                stopmotion_main(naloga[i][1], naloga[i][2])
+            elif naloga[i][0] == "slideshow":
+                slideshow_main(naloga[i][1], naloga[i][2], naloga[i][3])
+	    
+            time.sleep(cakanje_med_nalogami)
+	    
+    except RuntimeError as e:
+        print(f"Restarting main loop: {e}")
+        #continue
+    except Exception as e:
+        print(f"Fatal error: {e}")
+        #break
+
+if __name__=="__main__":
+    main()
