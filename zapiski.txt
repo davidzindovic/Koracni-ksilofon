@@ -34,3 +34,12 @@ to-do: navodila za uporabo dev vs user
 	sim env za PC za user
 	kere barve so na voljo (cifra+slika barve)
 	vmes med transitioni naj bo neka slika al neki
+
+06.06.2025 -> screensaver dela, rešen problem pri tkinterju 
+		(za stopmotion) ker ni najdu lokalnih funkcij
+		screensaver zrihtan za vse funkcije
+
+to-do: barve (nujno-kere so na voljo - legenda ipd.)
+	boot launch
+	seemless transitioni?
+	user manual, sim env za PC
